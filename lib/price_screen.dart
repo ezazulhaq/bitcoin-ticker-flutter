@@ -1,7 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'coin_data.dart';
 import 'dart:io' show Platform;
+import 'package:http/http.dart' as HTTP;
+
+import 'coin_data.dart';
+
+const apiKey = '0A09BEE0-6367-4C43-BB41-9AC43AEF1F25';
+const coinURL = 'https://rest.coinapi.io/v1/exchangerate/BTC';
+//https://rest.coinapi.io/v1/exchangerate/BTC/USD?apikey=0A09BEE0-6367-4C43-BB41-9AC43AEF1F25
 
 class PriceScreen extends StatefulWidget {
   @override
@@ -10,6 +19,26 @@ class PriceScreen extends StatefulWidget {
 
 class _PriceScreenState extends State<PriceScreen> {
   String selectedCurrency = 'USD';
+  String exchangeValue = '?';
+
+  @override
+  void initState() {
+    super.initState();
+    getExchangeRate(selectedCurrency);
+  }
+
+  Future getExchangeRate(String currency) async {
+    String url = '$coinURL/$currency?apikey=$apiKey';
+    print(url);
+    HTTP.Response response = await HTTP.get(url);
+    String data = response.body;
+    print(data);
+    double rate = jsonDecode(data)['rate']; // path - rate
+    setState(() {
+      exchangeValue = rate.toStringAsFixed(2);
+    });
+    //return exchangeValue;
+  }
 
   DropdownButton androidDPicker() {
     List<DropdownMenuItem<String>> dropdownValues = [];
@@ -29,6 +58,7 @@ class _PriceScreenState extends State<PriceScreen> {
           () {
             selectedCurrency = value;
             print(selectedCurrency);
+            getExchangeRate(selectedCurrency);
           },
         );
       },
@@ -50,7 +80,11 @@ class _PriceScreenState extends State<PriceScreen> {
     return CupertinoPicker(
       itemExtent: 32.0,
       onSelectedItemChanged: (selectedIndex) {
-        print(selectedIndex);
+        setState(() {
+          print(selectedIndex);
+          selectedCurrency = currenciesList[selectedIndex];
+          getExchangeRate(selectedCurrency);
+        });
       },
       children: pickerValues,
     );
@@ -86,7 +120,7 @@ class _PriceScreenState extends State<PriceScreen> {
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 28.0),
                 child: Text(
-                  '1 BTC = ? USD',
+                  '1 BTC = $exchangeValue $selectedCurrency',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20.0,
